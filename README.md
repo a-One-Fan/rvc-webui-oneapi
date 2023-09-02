@@ -1,96 +1,58 @@
-<div align="center">
 
-<h1>Retrieval-based-Voice-Conversion-WebUI</h1>
-An easy-to-use Voice Conversion framework based on VITS.<br><br>
+# Retrieval-based-Voice-Conversion-WebUI (oneAPI version)
 
-[![madewithlove](https://img.shields.io/badge/made_with-%E2%9D%A4-red?style=for-the-badge&labelColor=orange
-)](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI)
+[Demo Video of non-oneAPI version](https://www.bilibili.com/video/BV1pm4y1z7Gm/)
 
-<img src="https://counter.seku.su/cmoe?name=rvc&theme=r34" /><br>
-  
-[![Open In Colab](https://img.shields.io/badge/Colab-F9AB00?style=for-the-badge&logo=googlecolab&color=525252)](https://colab.research.google.com/github/RVC-Project/Retrieval-based-Voice-Conversion-WebUI/blob/main/Retrieval_based_Voice_Conversion_WebUI.ipynb)
-[![Licence](https://img.shields.io/github/license/RVC-Project/Retrieval-based-Voice-Conversion-WebUI?style=for-the-badge)](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI/blob/main/LICENSE)
-[![Huggingface](https://img.shields.io/badge/🤗%20-Spaces-yellow.svg?style=for-the-badge)](https://huggingface.co/lj1995/VoiceConversionWebUI/tree/main/)
+oneAPI fork of w-okada RVC, for inference: https://github.com/a-One-Fan/okada-rvc-oneapi
 
-[![Discord](https://img.shields.io/badge/RVC%20Developers-Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/HcsmBBGyVk)
+Currently, this (wil be) tested on WSL2. Expect a more automated installation in the future?
 
-</div>
+# Installation:
 
-------
-[**Changelog**](./docs/en/Changelog_EN.md) | [**FAQ (Frequently Asked Questions)**](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI/wiki/FAQ-(Frequently-Asked-Questions)) 
+- Install the oneAPI base toolkit
 
-[**English**](.README.md) | [**中文简体**](./docs/cn/README.cn.md) | [**日本語**](./docs/jp/README.ja.md) | [**한국어**](./docs/kr/README.ko.md) ([**韓國語**](./docs/kr/README.ko.han.md)) | [**Türkçe**](./docs/tr/README.tr.md)
+https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit-download.html?operatingsystem=linux&distributions=aptpackagemanager
 
+- Get conda
 
-Check our [Demo Video](https://www.bilibili.com/video/BV1pm4y1z7Gm/) here!
+Go to https://repo.anaconda.com/archive/
 
-oneAPI version of w-okada's repo using RVC: https://github.com/a-One-Fan/okada-rvc-oneapi
+Copy the link for the newest conda (e.g. the one called "Anaconda3-2023.07-2-Linux-x86_64.sh"), `wget` it, run it and install. Don't forget to `chmod` it if it refuses to run.
 
+- Create a conda environment, install this repo's requirements
 
-> The dataset for the pre-training model uses nearly 50 hours of high quality VCTK open source dataset.
+This repo requires torchaudio. Intel do not officially provide torchaudio wheels. You may get my compiled wheels from mega.nz, via megatools in the command line.
+From inside this repo's folder,
 
-> High quality licensed song datasets will be added to training-set one after another for your use, without worrying about copyright infringement.
-
-> Please look forward to the pretrained base model of RVCv3, which has larger parameters, more training data, better results, unchanged inference speed, and requires less training data for training.
-
-## Summary
-This repository has the following features:
-+ Reduce tone leakage by replacing the source feature to training-set feature using top1 retrieval;
-+ Easy and fast training, even on relatively poor graphics cards;
-+ Training with a small amount of data also obtains relatively good results (>=10min low noise speech recommended);
-+ Supporting model fusion to change timbres (using ckpt processing tab->ckpt merge);
-+ Easy-to-use Webui interface;
-+ Use the UVR5 model to quickly separate vocals and instruments.
-+ Use the most powerful High-pitch Voice Extraction Algorithm [InterSpeech2023-RMVPE](#Credits) to prevent the muted sound problem. Provides the best results (significantly) and is faster, with even lower resource consumption than Crepe_full.
-+ AMD/Intel graphics cards acceleration supported.
-
-## Preparing the environment
-The following commands need to be executed in the environment of Python version 3.8 or higher.
-
-(Windows/Linux)
-First install the main dependencies through pip:
-```bash
-# Install PyTorch-related core dependencies, skip if installed
-# Reference: https://pytorch.org/get-started/locally/
-pip install torch torchvision torchaudio
-
-#For Windows + Nvidia Ampere Architecture(RTX30xx), you need to specify the cuda version corresponding to pytorch according to the experience of https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI/issues/21
-#pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu117
+```sh
+conda create -n rvc python=3.10
+conda activate rvc_webui
+sudo apt install libportaudio2 libasound-dev megatools
+pip install astunparse numpy==1.23.5 pyyaml>=6.0 pytest psutil setuptools cffi typing_extensions future six requests hypothesis expecttest types-dataclasses dataclasses Pillow>=9.1.1 SoundFIle==0.12.1 kaldi-io==0.9.8 scipy==1.11.2
+mkdir megatemp
+cd ./megatemp
+megadl https://mega.nz/file/ndIRTYzQ#tn8teb5dXZQ6GNJBfRxykI1zQ58f-xBu8wNi-usYYho
+tar -xzvf ./wheels.tar.gz
+python -m pip install torch-2.0.1a0+gite9ebda2-cp310-cp310-linux_x86_64.whl
+python -m pip install --no-deps torchvision-0.15.2a0+fa99a53-cp310-cp310-linux_x86_64.whl
+python -m pip install --no-deps torchaudio-2.0.2+31de77d-cp310-cp310-linux_x86_64.whl
+intel_extension_for_pytorch-2.0.110+gite29c5fb-cp310-cp310-linux_x86_64.whl
+cd ..
+rm -rf ./megatemp
+cd ./server
+pip install -r requirements.txt
+cd ..
 ```
 
-Then can use poetry to install the other dependencies:
-```bash
-# Install the Poetry dependency management tool, skip if installed
-# Reference: https://python-poetry.org/docs/#installation
-curl -sSL https://install.python-poetry.org | python3 -
+If you do not wish to get my wheels, you can compile them yourself with Intel's convenient compile script: https://github.com/intel/intel-extension-for-pytorch/blob/xpu-master/scripts/compile_bundle.sh
 
-# Install the project dependencies
-poetry install
-```
+This will take a while.
 
-You can also use pip to install them:
-```bash
+- Get pretrained models
 
-for Nvidia graphics cards
-  pip install -r requirements.txt
+https://huggingface.co/lj1995/VoiceConversionWebUI/tree/main/
 
-for AMD/Intel graphics cards：
-  pip install -r requirements-dml.txt
-
-```
-
-------
-Mac users can install dependencies via `run.sh`:
-```bash
-sh ./run.sh
-```
-
-## Preparation of other Pre-models
-RVC requires other pre-models to infer and train.
-
-You need to download them from our [Huggingface space](https://huggingface.co/lj1995/VoiceConversionWebUI/tree/main/).
-
-Here's a list of Pre-models and other files that RVC needs:
+List of needed models and other needed files?
 ```bash
 ./assets/hubert/hubert_base.pt
 
@@ -106,31 +68,29 @@ If you want to test the v2 version model (the v2 version model has changed the i
 
 ./assets/pretrained_v2
 
-#If you are using Windows, you may also need these two files, skip if FFmpeg and FFprobe are installed
-ffmpeg.exe
-
-https://huggingface.co/lj1995/VoiceConversionWebUI/blob/main/ffmpeg.exe
-
-ffprobe.exe
-
-https://huggingface.co/lj1995/VoiceConversionWebUI/blob/main/ffprobe.exe
-
 If you want to use the latest SOTA RMVPE vocal pitch extraction algorithm, you need to download the RMVPE weights and place them in the RVC root directory
 
 https://huggingface.co/lj1995/VoiceConversionWebUI/blob/main/rmvpe.pt
 
-    For AMD/Intel graphics cards users you need download:
-
-    https://huggingface.co/lj1995/VoiceConversionWebUI/blob/main/rmvpe.onnx
-
 ```
-Then use this command to start Webui:
+
+- Create an alias to source oneAPI environment scipts easily
+
+```sh
+echo 'alias oneapi="source /opt/intel/oneapi/mkl/latest/env/vars.sh; source /opt/intel/oneapi/compiler/latest/env/vars.sh"' >> ~/.bash_aliases
+```
+
+# Run?
+
 ```bash
+conda activate rvc_webui
+oneapi
 python infer-web.py
 ```
-If you are using Windows or macOS, you can download and extract `RVC-beta.7z` to use RVC directly by using `go-web.bat` on windows or `sh ./run.sh` on macOS to start Webui.
 
 ## Credits
+
++ [Retrieval-based-Voice-Conversion-WebUI](https://github.com/a-One-Fan/rvc-webui-oneapi)
 + [ContentVec](https://github.com/auspicious3000/contentvec/)
 + [VITS](https://github.com/jaywalnut310/vits)
 + [HIFIGAN](https://github.com/jik876/hifi-gan)

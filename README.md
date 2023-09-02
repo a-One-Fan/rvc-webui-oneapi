@@ -39,7 +39,6 @@ python -m pip install --no-deps torchaudio-2.0.2+31de77d-cp310-cp310-linux_x86_6
 intel_extension_for_pytorch-2.0.110+gite29c5fb-cp310-cp310-linux_x86_64.whl
 cd ..
 rm -rf ./megatemp
-cd ./server
 pip install -r requirements.txt
 cd ..
 ```

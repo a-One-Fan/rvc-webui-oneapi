@@ -60,13 +60,10 @@ if __name__ == "__main__":
     import tools.rvc_for_realtime as rvc_for_realtime
     from i18n.i18n import I18nAuto
 
+    import intel_extension_for_pytorch
+
     i18n = I18nAuto()
     device = rvc_for_realtime.config.device
-    # device = torch.device(
-    #     "cuda"
-    #     if torch.cuda.is_available()
-    #     else ("mps" if torch.backends.mps.is_available() else "cpu")
-    # )
     current_dir = os.getcwd()
     inp_q = Queue()
     opt_q = Queue()
@@ -358,7 +355,7 @@ if __name__ == "__main__":
                     )
                 if event == "start_vc" and self.flag_vc == False:
                     if self.set_values(values) == True:
-                        logger.info("Use CUDA:" + str(torch.cuda.is_available()))
+                        logger.info("Using XPU:" + str(torch.xpu.is_available()))
                         self.start_vc()
                         settings = {
                             "pth_path": values["pth_path"],
@@ -444,7 +441,7 @@ if __name__ == "__main__":
             return True
 
         def start_vc(self):
-            torch.cuda.empty_cache()
+            #! torch.xpu.empty_cache() is leaky
             self.flag_vc = True
             self.rvc = rvc_for_realtime.RVC(
                 self.config.pitch,

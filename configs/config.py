@@ -9,6 +9,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+import intel_extension_for_pytorch
+
 
 def use_fp32_config():
     for config_file in [
@@ -41,7 +43,7 @@ def singleton_variable(func):
 @singleton_variable
 class Config:
     def __init__(self):
-        self.device = "cuda:0"
+        self.device = "xpu:0"
         self.is_half = True
         self.n_cpu = 0
         self.gpu_name = None
@@ -103,9 +105,9 @@ class Config:
             return False
 
     def device_config(self) -> tuple:
-        if torch.cuda.is_available():
+        if torch.xpu.is_available():
             i_device = int(self.device.split(":")[-1])
-            self.gpu_name = torch.cuda.get_device_name(i_device)
+            self.gpu_name = torch.xpu.get_device_name(i_device)
             if (
                 ("16" in self.gpu_name and "V100" not in self.gpu_name.upper())
                 or "P40" in self.gpu_name.upper()
@@ -120,7 +122,7 @@ class Config:
             else:
                 logger.info("Found GPU %s", self.gpu_name)
             self.gpu_mem = int(
-                torch.cuda.get_device_properties(i_device).total_memory
+                torch.xpu.get_device_properties(i_device).total_memory
                 / 1024
                 / 1024
                 / 1024
@@ -174,7 +176,7 @@ class Config:
                 try:
                     os.rename(
                         "runtime\Lib\site-packages\onnxruntime",
-                        "runtime\Lib\site-packages\onnxruntime-cuda",
+                        "runtime\Lib\site-packages\onnxruntime-xpu",
                     )
                 except:
                     pass

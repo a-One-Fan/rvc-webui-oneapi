@@ -30,6 +30,8 @@ from infer.lib.train.process_ckpt import (
 from infer.modules.uvr5.modules import uvr
 from infer.modules.vc.modules import VC
 
+import intel_extension_for_pytorch
+
 logging.getLogger("numba").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
@@ -62,14 +64,14 @@ if config.dml == True:
 i18n = I18nAuto()
 logger.info(i18n)
 # 判断是否有能用来训练和加速推理的N卡
-ngpu = torch.cuda.device_count()
+ngpu = torch.xpu.device_count()
 gpu_infos = []
 mem = []
 if_gpu_ok = False
 
-if torch.cuda.is_available() or ngpu != 0:
+if torch.xpu.is_available() or ngpu != 0:
     for i in range(ngpu):
-        gpu_name = torch.cuda.get_device_name(i)
+        gpu_name = torch.xpu.get_device_name(i)
         if any(
             value in gpu_name.upper()
             for value in [
@@ -98,7 +100,7 @@ if torch.cuda.is_available() or ngpu != 0:
             gpu_infos.append("%s\t%s" % (i, gpu_name))
             mem.append(
                 int(
-                    torch.cuda.get_device_properties(i).total_memory
+                    torch.xpu.get_device_properties(i).total_memory
                     / 1024
                     / 1024
                     / 1024
@@ -330,7 +332,7 @@ def extract_f0_feature(gpus, n_p, f0method, if_f0, exp_dir, version19, gpus_rmvp
     i_part=int(sys.argv[2])
     i_gpu=sys.argv[3]
     exp_dir=sys.argv[4]
-    os.environ["CUDA_VISIBLE_DEVICES"]=str(i_gpu)
+    os.environ["XPU_VISIBLE_DEVICES"]=str(i_gpu)
     """
     leng = len(gpus)
     ps = []

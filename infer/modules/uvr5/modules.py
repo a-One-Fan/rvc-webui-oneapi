@@ -92,7 +92,8 @@ def uvr(model_name, inp_root, save_root_vocal, paths, save_root_ins, agg, format
                 del pre_fun
         except:
             traceback.print_exc()
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-            logger.info("Executed torch.cuda.empty_cache()")
+        if torch.xpu.is_available():
+            #! torch.xpu.empty_cache() Causes memory leak
+            #logger.info("Executed torch.xpu.empty_cache()")
+            pass
     yield "\n".join(infos)

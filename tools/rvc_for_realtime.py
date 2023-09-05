@@ -43,8 +43,6 @@ if config.dml == True:
     fairseq.modules.grad_multiply.GradMultiply.forward = forward_dml
 
 
-# config.device=torch.device("cpu")########强制cpu测试
-# config.is_half=False########强制cpu测试
 class RVC:
     def __init__(
         self, key, pth_path, index_path, index_rate, n_cpu, inp_q, opt_q, device
@@ -56,7 +54,6 @@ class RVC:
             global config
             self.inp_q = inp_q
             self.opt_q = opt_q
-            # device="cpu"########强制cpu测试
             self.device = device
             self.f0_up_key = key
             self.time_step = 160 / 16000 * 1000
@@ -107,7 +104,6 @@ class RVC:
             del self.net_g.enc_q
             logger.debug(self.net_g.load_state_dict(cpt["weight"], strict=False))
             self.net_g.eval().to(device)
-            # print(2333333333,device,config.device,self.device)#net_g是device，hubert是config.device
             if config.is_half:
                 self.net_g = self.net_g.half()
             else:
@@ -216,7 +212,6 @@ class RVC:
         if "privateuseone" in str(self.device):  ###不支持dml，cpu又太慢用不成，拿pm顶替
             return self.get_f0(x, f0_up_key, 1, "pm")
         audio = torch.tensor(np.copy(x))[None].float()
-        # print("using crepe,device:%s"%self.device)
         f0, pd = torchcrepe.predict(
             audio,
             self.sr,
@@ -225,7 +220,6 @@ class RVC:
             self.f0_max,
             "full",
             batch_size=512,
-            # device=self.device if self.device.type!="privateuseone" else "cpu",###crepe不用半精度全部是全精度所以不愁###cpu延迟高到没法用
             device=self.device,
             return_periodicity=True,
         )
@@ -242,14 +236,10 @@ class RVC:
 
             logger.info("Loading rmvpe model")
             self.model_rmvpe = RMVPE(
-                # "rmvpe.pt", is_half=self.is_half if self.device.type!="privateuseone" else False, device=self.device if self.device.type!="privateuseone"else "cpu"####dml时强制对rmvpe用cpu跑
-                #  "rmvpe.pt", is_half=False, device=self.device####dml配置
-                # "rmvpe.pt", is_half=False, device="cpu"####锁定cpu配置
                 "assets/rmvpe/rmvpe.pt",
                 is_half=self.is_half,
                 device=self.device,  ####正常逻辑
             )
-            # self.model_rmvpe = RMVPE("aug2_58000_half.pt", is_half=self.is_half, device=self.device)
         f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
         f0 *= pow(2, f0_up_key / 12)
         return self.get_f0_post(f0)

@@ -54,8 +54,9 @@ class VC:
                 logger.info("Clean model cache")
                 del self.net_g, self.n_spk, self.vc, self.hubert_model, self.tgt_sr  # ,cpt
                 self.hubert_model = self.net_g = self.n_spk = self.vc = self.hubert_model = self.tgt_sr = None
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
+                if torch.xpu.is_available():
+                    #! torch.xpu.empty_cache() Causes memory leak
+                    pass
                 ###楼下不这么折腾清理不干净
                 self.if_f0 = self.cpt.get("f0", 1)
                 self.version = self.cpt.get("version", "v1")
@@ -74,8 +75,9 @@ class VC:
                     else:
                         self.net_g = SynthesizerTrnMs768NSFsid_nono(*self.cpt["config"])
                 del self.net_g, self.cpt
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
+                if torch.xpu.is_available():
+                    # ! torch.xpu.empty_cache() causes memory leak
+                    pass
             return (
                 {"visible": False, "__type__": "update"},
                 {

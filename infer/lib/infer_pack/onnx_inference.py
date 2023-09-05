@@ -12,8 +12,8 @@ class ContentVec:
         logger.info("Load model(s) from {}".format(vec_path))
         if device == "cpu" or device is None:
             providers = ["CPUExecutionProvider"]
-        elif device == "cuda":
-            providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
+        elif device == "xpu":
+            providers = ["'OpenVINOExecutionProvider'", "CPUExecutionProvider"] # ! OpenVINO
         elif device == "dml":
             providers = ["DmlExecutionProvider"]
         else:
@@ -73,8 +73,8 @@ class OnnxRVC:
         self.vec_model = ContentVec(vec_path, device)
         if device == "cpu" or device is None:
             providers = ["CPUExecutionProvider"]
-        elif device == "cuda":
-            providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
+        elif device == "xpu":
+            providers = ["OpenVINOExecutionProvider", "CPUExecutionProvider"] # ! OpenVINO
         elif device == "dml":
             providers = ["DmlExecutionProvider"]
         else:

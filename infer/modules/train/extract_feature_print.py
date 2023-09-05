@@ -2,6 +2,8 @@ import os
 import sys
 import traceback
 
+import intel_extension_for_pytorch
+
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 os.environ["PYTORCH_MPS_HIGH_WATERMARK_RATIO"] = "0.0"
 
@@ -14,7 +16,7 @@ if len(sys.argv) == 6:
 else:
     i_gpu = sys.argv[4]
     exp_dir = sys.argv[5]
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(i_gpu)
+    os.environ["XPU_VISIBLE_DEVICES"] = str(i_gpu)
     version = sys.argv[6]
 import fairseq
 import numpy as np
@@ -24,8 +26,8 @@ import torch.nn.functional as F
 
 if "privateuseone" not in device:
     device = "cpu"
-    if torch.cuda.is_available():
-        device = "cuda"
+    if torch.xpu.is_available():
+        device = "xpu"
     elif torch.backends.mps.is_available():
         device = "mps"
 else:

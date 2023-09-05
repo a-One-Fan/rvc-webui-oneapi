@@ -98,7 +98,7 @@ class Predictor:
         self.model = ort.InferenceSession(
             os.path.join(args.onnx, self.model_.target_name + ".onnx"),
             providers=[
-                "CUDAExecutionProvider",
+                "OpenVINOExecutionProvider",
                 "DmlExecutionProvider",
                 "CPUExecutionProvider",
             ],

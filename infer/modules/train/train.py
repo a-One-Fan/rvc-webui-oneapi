@@ -11,7 +11,7 @@ import datetime
 from infer.lib.train import utils
 
 hps = utils.get_hparams()
-os.environ["CUDA_VISIBLE_DEVICES"] = hps.gpus.replace("-", ",")
+os.environ["XPU_VISIBLE_DEVICES"] = hps.gpus.replace("-", ",")
 n_gpus = len(hps.gpus.split("-"))
 from random import randint, shuffle
 
@@ -24,10 +24,13 @@ from time import time as ttime
 
 import torch.distributed as dist
 import torch.multiprocessing as mp
-from torch.cuda.amp import GradScaler, autocast
+import intel_extension_for_pytorch
+import oneccl_bindings_for_pytorch
+from intel_extension_for_pytorch.xpu.amp import GradScaler, autocast
 from torch.nn import functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader
+
 from torch.utils.tensorboard import SummaryWriter
 
 from infer.lib.infer_pack import commons
@@ -78,9 +81,9 @@ class EpochRecorder:
 
 
 def main():
-    n_gpus = torch.cuda.device_count()
+    n_gpus = torch.xpu.device_count()
 
-    if torch.cuda.is_available() == False and torch.backends.mps.is_available() == True:
+    if torch.xpu.is_available() == False and torch.backends.mps.is_available() == True:
         n_gpus = 1
     if n_gpus < 1:
         # patch to unblock people without gpus. there is probably a better way.
@@ -115,11 +118,11 @@ def run(rank, n_gpus, hps):
         writer_eval = SummaryWriter(log_dir=os.path.join(hps.model_dir, "eval"))
 
     dist.init_process_group(
-        backend="gloo", init_method="env://", world_size=n_gpus, rank=rank
+        backend="ccl", init_method="env://", world_size=n_gpus, rank=rank # ! Backend gloo -> ccl
     )
     torch.manual_seed(hps.train.seed)
-    if torch.cuda.is_available():
-        torch.cuda.set_device(rank)
+    if torch.xpu.is_available():
+        torch.xpu.set_device(rank)
 
     if hps.if_f0 == 1:
         train_dataset = TextAudioLoaderMultiNSFsid(hps.data.training_files, hps.data)
@@ -165,11 +168,12 @@ def run(rank, n_gpus, hps):
             **hps.model,
             is_half=hps.train.fp16_run,
         )
-    if torch.cuda.is_available():
-        net_g = net_g.cuda(rank)
+    xpu_dev = torch.device(f'xpu:{rank}')
+    if torch.xpu.is_available():
+        net_g = net_g.to(xpu_dev)
     net_d = MultiPeriodDiscriminator(hps.model.use_spectral_norm)
-    if torch.cuda.is_available():
-        net_d = net_d.cuda(rank)
+    if torch.xpu.is_available():
+        net_d = net_d.to(xpu_dev)
     optim_g = torch.optim.AdamW(
         net_g.parameters(),
         hps.train.learning_rate,
@@ -184,7 +188,7 @@ def run(rank, n_gpus, hps):
     )
     # net_g = DDP(net_g, device_ids=[rank], find_unused_parameters=True)
     # net_d = DDP(net_d, device_ids=[rank], find_unused_parameters=True)
-    if torch.cuda.is_available():
+    if torch.xpu.is_available():
         net_g = DDP(net_g, device_ids=[rank])
         net_d = DDP(net_d, device_ids=[rank])
     else:
@@ -313,18 +317,19 @@ def train_and_evaluate(
                         wave_lengths,
                         sid,
                     ) = info
-                # Load on CUDA
-                if torch.cuda.is_available():
-                    phone = phone.cuda(rank, non_blocking=True)
-                    phone_lengths = phone_lengths.cuda(rank, non_blocking=True)
+                # Load on XPU
+                if torch.xpu.is_available():
+                    xpu_dev = torch.device(f'xpu:{rank}')
+                    phone = phone.to(xpu_dev, non_blocking=True)
+                    phone_lengths = phone_lengths.to(xpu_dev, non_blocking=True)
                     if hps.if_f0 == 1:
-                        pitch = pitch.cuda(rank, non_blocking=True)
-                        pitchf = pitchf.cuda(rank, non_blocking=True)
-                    sid = sid.cuda(rank, non_blocking=True)
-                    spec = spec.cuda(rank, non_blocking=True)
-                    spec_lengths = spec_lengths.cuda(rank, non_blocking=True)
-                    wave = wave.cuda(rank, non_blocking=True)
-                    wave_lengths = wave_lengths.cuda(rank, non_blocking=True)
+                        pitch = pitch.to(xpu_dev, non_blocking=True)
+                        pitchf = pitchf.to(xpu_dev, non_blocking=True)
+                    sid = sid.to(xpu_dev, non_blocking=True)
+                    spec = spec.to(xpu_dev, non_blocking=True)
+                    spec_lengths = spec_lengths.to(xpu_dev, non_blocking=True)
+                    wave = wave.to(xpu_dev, non_blocking=True)
+                    wave_lengths = wave_lengths.to(xpu_dev, non_blocking=True)
                 # Cache on list
                 if hps.if_f0 == 1:
                     cache.append(
@@ -384,18 +389,18 @@ def train_and_evaluate(
             ) = info
         else:
             phone, phone_lengths, spec, spec_lengths, wave, wave_lengths, sid = info
-        ## Load on CUDA
-        if (hps.if_cache_data_in_gpu == False) and torch.cuda.is_available():
-            phone = phone.cuda(rank, non_blocking=True)
-            phone_lengths = phone_lengths.cuda(rank, non_blocking=True)
+        ## Load on XPU
+        if (hps.if_cache_data_in_gpu == False) and torch.xpu.is_available():
+            xpu_dev = torch.device(f'xpu:{rank}')
+            phone = phone.to(xpu_dev, non_blocking=True)
+            phone_lengths = phone_lengths.to(xpu_dev, non_blocking=True)
             if hps.if_f0 == 1:
-                pitch = pitch.cuda(rank, non_blocking=True)
-                pitchf = pitchf.cuda(rank, non_blocking=True)
-            sid = sid.cuda(rank, non_blocking=True)
-            spec = spec.cuda(rank, non_blocking=True)
-            spec_lengths = spec_lengths.cuda(rank, non_blocking=True)
-            wave = wave.cuda(rank, non_blocking=True)
-            # wave_lengths = wave_lengths.cuda(rank, non_blocking=True)
+                pitch = pitch.to(xpu_dev, non_blocking=True)
+                pitchf = pitchf.to(xpu_dev, non_blocking=True)
+            sid = sid.to(xpu_dev, non_blocking=True)
+            spec = spec.to(xpu_dev, non_blocking=True)
+            spec_lengths = spec_lengths.to(xpu_dev, non_blocking=True)
+            wave = wave.to(xpu_dev, non_blocking=True)
 
         # Calculate
         with autocast(enabled=hps.train.fp16_run):

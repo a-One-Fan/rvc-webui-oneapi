@@ -563,7 +563,7 @@ def click_train(
     logger.debug("Write filelist done")
     # 生成config#无需生成config
     # cmd = python_cmd + " train_nsf_sim_cache_sid_load_pretrain.py -e mi-test -sr 40k -f0 1 -bs 4 -g 0 -te 10 -se 5 -pg pretrained/f0G40k.pth -pd pretrained/f0D40k.pth -l 1 -c 0"
-    logger.info("Use gpus:", gpus16)
+    logger.info(f"Use gpus: {gpus16}")
     if pretrained_G14 == "":
         logger.info("No pretrained Generator")
     if pretrained_D15 == "":

@@ -343,11 +343,11 @@ class SineGen(torch.nn.Module):
             tmp_over_one = torch.cumsum(rad_values, 1)  # % 1  #####%1意味着后面的cumsum无法再优化
             tmp_over_one *= upp
             tmp_over_one = F.interpolate(
-                tmp_over_one.transpose(2, 1),
+                tmp_over_one.transpose(2, 1).to('cpu'),
                 scale_factor=upp,
                 mode="linear",
                 align_corners=True,
-            ).transpose(2, 1)
+            ).to(tmp_over_one.device).transpose(2, 1)
             rad_values = F.interpolate(
                 rad_values.transpose(2, 1), scale_factor=upp, mode="nearest"
             ).transpose(
@@ -615,7 +615,7 @@ class SynthesizerTrnMs256NSFsid(nn.Module):
             inter_channels, hidden_channels, 5, 1, 3, gin_channels=gin_channels
         )
         self.emb_g = nn.Embedding(self.spk_embed_dim, gin_channels)
-        logger.debug("gin_channels:", gin_channels, "self.spk_embed_dim:", self.spk_embed_dim)
+        logger.debug(f"gin_channels: {gin_channels}, self.spk_embed_dim: {self.spk_embed_dim}")
 
     def remove_weight_norm(self):
         self.dec.remove_weight_norm()
@@ -731,7 +731,7 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
             inter_channels, hidden_channels, 5, 1, 3, gin_channels=gin_channels
         )
         self.emb_g = nn.Embedding(self.spk_embed_dim, gin_channels)
-        logger.debug("gin_channels:", gin_channels, "self.spk_embed_dim:", self.spk_embed_dim)
+        logger.debug(f"gin_channels: {gin_channels}, self.spk_embed_dim: {self.spk_embed_dim}")
 
     def remove_weight_norm(self):
         self.dec.remove_weight_norm()
@@ -844,7 +844,7 @@ class SynthesizerTrnMs256NSFsid_nono(nn.Module):
             inter_channels, hidden_channels, 5, 1, 3, gin_channels=gin_channels
         )
         self.emb_g = nn.Embedding(self.spk_embed_dim, gin_channels)
-        logger.debug("gin_channels:", gin_channels, "self.spk_embed_dim:", self.spk_embed_dim)
+        logger.debug(f"gin_channels: {gin_channels}, self.spk_embed_dim: {self.spk_embed_dim}")
 
     def remove_weight_norm(self):
         self.dec.remove_weight_norm()
@@ -950,7 +950,7 @@ class SynthesizerTrnMs768NSFsid_nono(nn.Module):
             inter_channels, hidden_channels, 5, 1, 3, gin_channels=gin_channels
         )
         self.emb_g = nn.Embedding(self.spk_embed_dim, gin_channels)
-        logger.debug("gin_channels:", gin_channels, "self.spk_embed_dim:", self.spk_embed_dim)
+        logger.debug(f"gin_channels: {gin_channels}, self.spk_embed_dim: {self.spk_embed_dim}")
 
     def remove_weight_norm(self):
         self.dec.remove_weight_norm()
@@ -1135,7 +1135,7 @@ class DiscriminatorP(torch.nn.Module):
         b, c, t = x.shape
         if t % self.period != 0:  # pad first
             n_pad = self.period - (t % self.period)
-            x = F.pad(x, (0, n_pad), "reflect")
+            x = F.pad(x.to(torch.float32), (0, n_pad), "reflect").to(torch.bfloat16)
             t = t + n_pad
         x = x.view(b, c, t // self.period, self.period)
 

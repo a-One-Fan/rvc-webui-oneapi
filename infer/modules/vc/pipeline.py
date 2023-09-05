@@ -272,8 +272,9 @@ class Pipeline(object):
             )
             del hasp, arg
         del feats, p_len, padding_mask
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
+        if torch.xpu.is_available():
+            #! torch.xpu.empty_cache() Causes memory leak
+            pass
         t2 = ttime()
         times[0] += t1 - t0
         times[2] += t2 - t1
@@ -453,6 +454,7 @@ class Pipeline(object):
             max_int16 /= audio_max
         audio_opt = (audio_opt * max_int16).astype(np.int16)
         del pitch, pitchf, sid
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
+        if torch.xpu.is_available():
+            # ! torch.xpu.empty_cache() Causes memory leak
+            pass
         return audio_opt

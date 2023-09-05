@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 import parselmouth
 import torch
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["XPU_VISIBLE_DEVICES"] = "0"
 # import torchcrepe
 from time import time as ttime
 
@@ -32,7 +32,7 @@ from scipy.io import wavfile
 # from models import SynthesizerTrn256NSFsimFlow as SynthesizerTrn256#hifigan_nsf
 
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("xpu" if torch.xpu.is_available() else "cpu")
 model_path = r"E:\codes\py39\vits_vc_gpu_train\assets\hubert\hubert_base.pt"  #
 logger.info("Load model(s) from {}".format(model_path))
 models, saved_cfg, task = checkpoint_utils.load_model_ensemble_and_task(
@@ -147,8 +147,8 @@ for idx, name in enumerate(
         "padding_mask": padding_mask.to(device),
         "output_layer": 9,  # layer 9
     }
-    if torch.cuda.is_available():
-        torch.cuda.synchronize()
+    if torch.xpu.is_available():
+        torch.xpu.synchronize()
     t0 = ttime()
     with torch.no_grad():
         logits = model.extract_features(**inputs)
@@ -162,15 +162,15 @@ for idx, name in enumerate(
     )
 
     feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2).permute(0, 2, 1)
-    if torch.cuda.is_available():
-        torch.cuda.synchronize()
+    if torch.xpu.is_available():
+        torch.xpu.synchronize()
     t1 = ttime()
     # p_len = min(feats.shape[1],10000,pitch.shape[0])#太大了爆显存
     p_len = min(feats.shape[1], 10000)  #
     pitch, pitchf = get_f0(audio, p_len, f0_up_key)
     p_len = min(feats.shape[1], 10000, pitch.shape[0])  # 太大了爆显存
-    if torch.cuda.is_available():
-        torch.cuda.synchronize()
+    if torch.xpu.is_available():
+        torch.xpu.synchronize()
     t2 = ttime()
     feats = feats[:, :p_len, :]
     pitch = pitch[:p_len]
@@ -186,8 +186,8 @@ for idx, name in enumerate(
             .float()
             .numpy()
         )  # nsf
-    if torch.cuda.is_available():
-        torch.cuda.synchronize()
+    if torch.xpu.is_available():
+        torch.xpu.synchronize()
     t3 = ttime()
     ta0 += t1 - t0
     ta1 += t2 - t1

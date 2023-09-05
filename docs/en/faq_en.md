@@ -34,7 +34,7 @@ https://huggingface.co/lj1995/VoiceConversionWebUI/blob/main/myinfer.py<br>
 
 e.g.<br>
 
-runtime\python.exe myinfer.py 0 "E:\codes\py39\RVC-beta\todo-songs\1111.wav" "E:\codes\py39\logs\mi-test\added_IVF677_Flat_nprobe_7.index" harvest "test.wav" "weights/mi-test.pth" 0.6 cuda:0 True<br>
+runtime\python.exe myinfer.py 0 "E:\codes\py39\RVC-beta\todo-songs\1111.wav" "E:\codes\py39\logs\mi-test\added_IVF677_Flat_nprobe_7.index" harvest "test.wav" "weights/mi-test.pth" 0.6 xpu:0 True<br>
 
 
 f0up_key=sys.argv[1]<br>
@@ -47,8 +47,8 @@ index_rate=float(sys.argv[7])<br>
 device=sys.argv[8]<br>
 is_half=bool(sys.argv[9])<br>
 
-## Q8:Cuda error/Cuda out of memory.
-There is a small chance that there is a problem with the CUDA configuration or the device is not supported; more likely, there is not enough memory (out of memory).<br>
+## Q8:IPEX error/out of memory.
+There is a small chance that there is a problem with the configuration or the device is not supported; more likely, there is not enough memory (out of memory).<br>
 
 For training, reduce the batch size (if reducing to 1 is still not enough, you may need to change the graphics card); for inference, adjust the x_pad, x_query, x_center, and x_max settings in the config.py file as needed. 4G or lower memory cards (e.g. 1060(3G) and various 2G cards) can be abandoned, while 4G memory cards still have a chance.<br>
 
@@ -77,7 +77,7 @@ The index rate is used to reduce/resolve the timbre leakage problem. If the inde
 If the training set has good audio quality and long duration, turn up the total_epoch, when the model itself is less likely to refer to the inferred source and the pretrained underlying model, and there is little "tone leakage", the index_rate is not important and you can even not create/share the index file.<br>
 
 ## Q12:How to choose the gpu when inferring?
-In the config.py file, select the card number after "device cuda:".<br>
+In the config.py file, select the card number after "device xpu:".<br>
 
 The mapping between card number and graphics card can be seen in the graphics card information section of the training tab.<br>
 
